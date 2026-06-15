@@ -1,0 +1,26 @@
+### 알람 API 로컬 테스트 (HTTP Client)
+# 이 파일은 IntelliJ IDEA 또는 VS Code (REST Client 확장 프로그램 설치 필요)에서
+# 각 요청 왼쪽의 재생 버튼(▶)을 클릭하여 로컬 알람 API를 직접 호출할 수 있습니다.
+# 호출 전에 로컬 어플리케이션(./gradlew bootRun)과 Docker Compose(docker-compose up -d)를 실행해 주세요.
+
+@hostname = localhost
+@port = 8080
+@baseUrl = http://{{hostname}}:{{port}}
+
+### 알람 신규 등록
+# 알람 생성 즉시 DB에 PENDING 상태로 저장되며, Kafka 'alarm-jobs' 토픽으로 작업이 발행되어 비동기 소비됩니다.
+# Idempotency-Key 헤더를 동일하게 재전송하면 409 Conflict로 중복 발송이 차단됩니다.
+POST {{baseUrl}}/notifications
+Content-Type: application/json
+Idempotency-Key: 12345{{$uuid}}
+
+{
+  "receiverId": "receiver-001",
+  "name": "Kafka Async Idempotency Test",
+  "payload": "{\"message\": \"Hello Kafka Asynchronous World!\"}"
+}
+
+> {%
+client.global.set("alarm_id", response.body.id);
+logger.log("Generated Alarm ID: " + response.body.id);
+%}
